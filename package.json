@@ -9,11 +9,12 @@
     "content:audit": "node scripts/audit-commercial-content.mjs",
     "pilot:audit": "node scripts/audit-two-week-pilot.mjs",
     "commercial:audit": "node scripts/audit-commercial-content.mjs",
+    "commercial-flow:audit": "node scripts/audit-commercial-flow.mjs",
     "progression:audit": "node scripts/audit-week-progression.mjs",
     "mobile:audit": "node scripts/audit-mobile-readiness.mjs",
     "content:check": "node scripts/audit-commercial-content.mjs",
     "knowledge:audit": "node scripts/audit-knowledge-tree.mjs",
-    "release:check": "npm run content:check && npm run content:audit && npm run knowledge:audit && npm run pilot:audit && npm run commercial:audit && npm run progression:audit && npm run mobile:audit && npm run build",
+    "release:check": "npm run content:check && npm run content:audit && npm run knowledge:audit && npm run pilot:audit && npm run commercial:audit && npm run commercial-flow:audit && npm run progression:audit && npm run mobile:audit && npm run build",
     "preview": "vite preview --host 127.0.0.1"
   },
   "dependencies": {

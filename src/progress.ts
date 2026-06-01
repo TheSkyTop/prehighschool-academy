@@ -12,10 +12,21 @@ export interface RewardRule {
   reward: string;
 }
 
+export type RewardPreference =
+  | "roblox"
+  | "cash"
+  | "screen-time"
+  | "wish-card";
+
+export type PaymentStatus = "unpaid" | "test-active" | "paid";
+
 export interface ProgressState {
   coins: number;
   streak: number;
   weekKey: string;
+  userEmail: string;
+  paymentStatus: PaymentStatus;
+  selectedReward: RewardPreference;
   completedQuestIds: string[];
   attempts: AttemptRecord[];
   rewardRules: RewardRule[];
@@ -38,10 +49,13 @@ function createDefaultProgress(): ProgressState {
     coins: 0,
     streak: 0,
     weekKey: getWeekKey(),
+    userEmail: "",
+    paymentStatus: "unpaid",
+    selectedReward: "roblox",
     completedQuestIds: [],
     attempts: [],
     rewardRules: [
-      { coins: 700, reward: "AU$5 Roblox gift card or equivalent cash reward" },
+      { coins: 700, reward: "Weekly parent-approved reward" },
     ],
   };
 }
@@ -54,6 +68,20 @@ function safeNumber(value: unknown, fallback = 0) {
 
 function safeStringArray(value: unknown) {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+}
+
+function safeString(value: unknown) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function safePaymentStatus(value: unknown): PaymentStatus {
+  return value === "paid" || value === "test-active" || value === "unpaid" ? value : "unpaid";
+}
+
+function safeRewardPreference(value: unknown): RewardPreference {
+  return value === "cash" || value === "screen-time" || value === "wish-card" || value === "roblox"
+    ? value
+    : "roblox";
 }
 
 function safeAttempts(value: unknown): AttemptRecord[] {
@@ -112,6 +140,9 @@ export function loadProgress(): ProgressState {
       coins: safeNumber(parsed.coins),
       streak: isNewWeek ? 0 : completedQuestIds.length,
       weekKey,
+      userEmail: safeString(parsed.userEmail),
+      paymentStatus: safePaymentStatus(parsed.paymentStatus),
+      selectedReward: safeRewardPreference(parsed.selectedReward),
       completedQuestIds,
       attempts: safeAttempts(parsed.attempts),
       rewardRules: safeRewardRules(parsed.rewardRules),
@@ -127,6 +158,9 @@ export function saveProgress(progress: ProgressState) {
     coins: safeNumber(progress.coins),
     streak: safeNumber(progress.streak),
     weekKey: getWeekKey(),
+    userEmail: safeString(progress.userEmail),
+    paymentStatus: safePaymentStatus(progress.paymentStatus),
+    selectedReward: safeRewardPreference(progress.selectedReward),
     completedQuestIds: safeStringArray(progress.completedQuestIds),
     attempts: safeAttempts(progress.attempts),
     rewardRules: safeRewardRules(progress.rewardRules),

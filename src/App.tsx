@@ -1,14 +1,50 @@
 import { Children, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { lessons, questions, subjects, weeklyQuests, type DailyQuest, type Lesson, type Question, type SubjectId } from "./data";
-import { calculateCoins, loadProgress, saveProgress, type AttemptRecord, type ProgressState } from "./progress";
+import {
+  calculateCoins,
+  loadProgress,
+  saveProgress,
+  type AttemptRecord,
+  type ProgressState,
+  type RewardPreference,
+} from "./progress";
 
-type View = "dashboard" | "knowledge" | "subjects" | "lesson" | "quiz" | "mistakes" | "rewards" | "parent";
+type View = "dashboard" | "knowledge" | "subjects" | "lesson" | "quiz" | "mistakes" | "rewards" | "parent" | "account";
 
 const lessonMap = new Map(lessons.map((lesson) => [lesson.id, lesson]));
 const questionMap = new Map(questions.map((question) => [question.id, question]));
 const DAILY_QUIZ_TARGET = 10;
 const QUIZ_SECONDS = 20 * 60;
 const YEAR_WEEKS = 52;
+const LIFETIME_ACCESS_AUD = 30;
+const FREE_PREVIEW_WEEKS = 2;
+
+const rewardOptions: Array<{ id: RewardPreference; title: string; shortTitle: string; detail: string }> = [
+  {
+    id: "roblox",
+    title: "Roblox AU$5",
+    shortTitle: "Roblox",
+    detail: "Parent-approved Roblox credit after a complete 700-point week.",
+  },
+  {
+    id: "cash",
+    title: "AU$5 Pocket Money",
+    shortTitle: "Pocket Money",
+    detail: "A simple cash-equivalent reward controlled by the parent.",
+  },
+  {
+    id: "screen-time",
+    title: "20 Minutes Screen Time",
+    shortTitle: "Screen Time",
+    detail: "One short TV, game, or screen-time session after weekly goals.",
+  },
+  {
+    id: "wish-card",
+    title: "Wish Card",
+    shortTitle: "Wish Card",
+    detail: "One child-chosen small wish card, approved by the parent.",
+  },
+];
 
 type ReadingPassageSet = {
   title: string;
@@ -673,6 +709,8 @@ function App() {
 
   const visibleQuests = getWeekQuests(activeWeek);
   const activeQuest = weeklyQuests.find((quest) => quest.id === activeQuestId) ?? visibleQuests[0] ?? weeklyQuests[0];
+  const hasLifetimeAccess = progress.paymentStatus === "paid" || progress.paymentStatus === "test-active";
+  const activeQuestRequiresAccess = questWeek(activeQuest.id) > FREE_PREVIEW_WEEKS && !hasLifetimeAccess;
   const questLessons = activeQuest.lessonIds
     .map((id) => lessonMap.get(id))
     .filter((lesson): lesson is Lesson => Boolean(lesson));
@@ -771,6 +809,9 @@ function App() {
           <button className={view === "rewards" ? "active" : ""} onClick={() => setView("rewards")}>
             Rewards
           </button>
+          <button className={view === "account" ? "active" : ""} onClick={() => setView("account")}>
+            Account
+          </button>
         </nav>
       </aside>
 
@@ -799,33 +840,49 @@ function App() {
         )}
         {view === "knowledge" && <KnowledgeMap progress={progress} />}
         {view === "subjects" && <SubjectsView onStartQuiz={() => setView("quiz")} />}
-        {view === "lesson" && (
-          <LessonView
-            activeQuest={activeQuest}
-            answers={answers}
-            correctCount={correctCount}
-            lastAward={lastAward}
-            lessons={questLessons}
-            questions={questQuestions}
-            submitted={quizSubmitted}
-            onAnswer={(id, answer) => setAnswers((current) => ({ ...current, [id]: answer }))}
-            onReset={resetQuiz}
-            onSubmit={submitQuiz}
-          />
-        )}
-        {view === "quiz" && (
-          <QuizView
-            activeQuest={activeQuest}
-            answers={answers}
-            correctCount={correctCount}
-            lastAward={lastAward}
-            questions={questQuestions}
-            submitted={quizSubmitted}
-            onAnswer={(id, answer) => setAnswers((current) => ({ ...current, [id]: answer }))}
-            onReset={resetQuiz}
-            onSubmit={submitQuiz}
-          />
-        )}
+        {view === "lesson" &&
+          (activeQuestRequiresAccess ? (
+            <AccessGate
+              progress={progress}
+              quest={activeQuest}
+              updateProgress={updateProgress}
+              onAccount={() => setView("account")}
+            />
+          ) : (
+            <LessonView
+              activeQuest={activeQuest}
+              answers={answers}
+              correctCount={correctCount}
+              lastAward={lastAward}
+              lessons={questLessons}
+              questions={questQuestions}
+              submitted={quizSubmitted}
+              onAnswer={(id, answer) => setAnswers((current) => ({ ...current, [id]: answer }))}
+              onReset={resetQuiz}
+              onSubmit={submitQuiz}
+            />
+          ))}
+        {view === "quiz" &&
+          (activeQuestRequiresAccess ? (
+            <AccessGate
+              progress={progress}
+              quest={activeQuest}
+              updateProgress={updateProgress}
+              onAccount={() => setView("account")}
+            />
+          ) : (
+            <QuizView
+              activeQuest={activeQuest}
+              answers={answers}
+              correctCount={correctCount}
+              lastAward={lastAward}
+              questions={questQuestions}
+              submitted={quizSubmitted}
+              onAnswer={(id, answer) => setAnswers((current) => ({ ...current, [id]: answer }))}
+              onReset={resetQuiz}
+              onSubmit={submitQuiz}
+            />
+          ))}
         {view === "mistakes" && (
           <MistakeBank
             attempts={progress.attempts}
@@ -833,8 +890,9 @@ function App() {
             onDelete={deleteMistake}
           />
         )}
-        {view === "rewards" && <RewardsView progress={progress} />}
+        {view === "rewards" && <RewardsView progress={progress} updateProgress={updateProgress} />}
         {view === "parent" && <ParentView progress={progress} updateProgress={updateProgress} />}
+        {view === "account" && <AccountView progress={progress} updateProgress={updateProgress} />}
       </main>
     </div>
   );
@@ -1970,8 +2028,15 @@ function MistakeBank({
   );
 }
 
-function RewardsView({ progress }: { progress: ProgressState }) {
+function RewardsView({
+  progress,
+  updateProgress,
+}: {
+  progress: ProgressState;
+  updateProgress: (progress: ProgressState) => void;
+}) {
   const rewardTarget = progress.rewardRules[0]?.coins ?? 700;
+  const selectedReward = rewardOptions.find((option) => option.id === progress.selectedReward) ?? rewardOptions[0];
   const weeklyBadgeTarget = 7;
   const weeklyCompleted = Math.min(progress.completedQuestIds.length, weeklyBadgeTarget);
   const weeklyBadgeUnlocked = weeklyCompleted === weeklyBadgeTarget;
@@ -1995,7 +2060,7 @@ function RewardsView({ progress }: { progress: ProgressState }) {
         </div>
         <div className="roblox-copy">
           <p className="eyebrow">Cumulative Reward</p>
-          <h1>Roblox AU$5</h1>
+          <h1>{selectedReward.title}</h1>
           <p>Every 700 points unlocks a parent-approved reward.</p>
           <div className="roblox-progress">
             <div>
@@ -2018,6 +2083,25 @@ function RewardsView({ progress }: { progress: ProgressState }) {
           <span />
         </div>
       </div>
+      <section className="reward-choice-panel" aria-label="Weekly reward choices">
+        <div>
+          <p className="eyebrow">Reward Choice</p>
+          <h2>Choose the weekly reward</h2>
+        </div>
+        <div className="reward-choice-grid">
+          {rewardOptions.map((option) => (
+            <button
+              className={option.id === progress.selectedReward ? "active" : ""}
+              key={option.id}
+              onClick={() => updateProgress({ ...progress, selectedReward: option.id })}
+              type="button"
+            >
+              <strong>{option.shortTitle}</strong>
+              <span>{option.detail}</span>
+            </button>
+          ))}
+        </div>
+      </section>
       <div className="badge-panel">
         <div className="badge-token" aria-hidden="true">
           <span>★</span>
@@ -2033,6 +2117,163 @@ function RewardsView({ progress }: { progress: ProgressState }) {
   );
 }
 
+function AccessGate({
+  progress,
+  quest,
+  updateProgress,
+  onAccount,
+}: {
+  progress: ProgressState;
+  quest: DailyQuest;
+  updateProgress: (progress: ProgressState) => void;
+  onAccount: () => void;
+}) {
+  const [email, setEmail] = useState(progress.userEmail);
+  const week = questWeek(quest.id);
+
+  function saveEmail() {
+    const normalized = email.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) return;
+    updateProgress({ ...progress, userEmail: normalized });
+  }
+
+  function activateTestAccess() {
+    updateProgress({
+      ...progress,
+      userEmail: email.trim().toLowerCase() || progress.userEmail,
+      paymentStatus: "test-active",
+    });
+  }
+
+  return (
+    <section className="access-gate">
+      <div className="access-gate-card">
+        <p className="eyebrow">Lifetime Access</p>
+        <h1>Unlock Week {week} and the full 52-week program</h1>
+        <p>
+          Weeks 1-2 are free to preview. Full access is a one-time AU${LIFETIME_ACCESS_AUD} lifetime purchase for this
+          parent account.
+        </p>
+        <div className="access-gate-form">
+          <label>
+            Parent email
+            <input
+              autoComplete="email"
+              inputMode="email"
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="parent@example.com"
+              type="email"
+              value={email}
+            />
+          </label>
+          <div className="action-row">
+            <button className="secondary-action" onClick={saveEmail} type="button">
+              Save email
+            </button>
+            <button className="primary-action" onClick={activateTestAccess} type="button">
+              Activate test access
+            </button>
+            <button className="secondary-action" onClick={onAccount} type="button">
+              Account settings
+            </button>
+          </div>
+        </div>
+        <p className="account-note">
+          Commercial release note: real payments must be verified by Stripe Checkout and a backend webhook before access
+          is marked as paid.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function AccountView({
+  progress,
+  updateProgress,
+}: {
+  progress: ProgressState;
+  updateProgress: (progress: ProgressState) => void;
+}) {
+  const [email, setEmail] = useState(progress.userEmail);
+  const hasAccount = Boolean(progress.userEmail);
+  const hasAccess = progress.paymentStatus === "paid" || progress.paymentStatus === "test-active";
+  const selectedReward = rewardOptions.find((option) => option.id === progress.selectedReward) ?? rewardOptions[0];
+
+  function saveEmail() {
+    const normalized = email.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) return;
+    updateProgress({ ...progress, userEmail: normalized });
+  }
+
+  function activateTestAccess() {
+    updateProgress({ ...progress, paymentStatus: "test-active" });
+  }
+
+  return (
+    <section>
+      <header className="section-header">
+        <p className="eyebrow">Account</p>
+        <h1>PreHighSchool Academy access</h1>
+        <p>Use one parent email for progress, lifetime access, and weekly reward settings.</p>
+      </header>
+
+      <div className="commercial-grid">
+        <section className="account-card">
+          <p className="eyebrow">Email Login</p>
+          <h2>{hasAccount ? "Signed in" : "Create account"}</h2>
+          <label>
+            Parent email
+            <input
+              autoComplete="email"
+              inputMode="email"
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="parent@example.com"
+              type="email"
+              value={email}
+            />
+          </label>
+          <button className="primary-action" onClick={saveEmail} type="button">
+            Save email
+          </button>
+          {hasAccount && <p className="account-note">Current account: {progress.userEmail}</p>}
+        </section>
+
+        <section className="account-card lifetime-card">
+          <p className="eyebrow">Lifetime Access</p>
+          <h2>AU${LIFETIME_ACCESS_AUD}</h2>
+          <p>One payment unlocks the full 52-week program on this account.</p>
+          <div className={`access-state ${hasAccess ? "active" : ""}`}>
+            {hasAccess ? "Access active" : "Payment required"}
+          </div>
+          <button className="primary-action" disabled={!hasAccount} onClick={activateTestAccess} type="button">
+            Activate test access
+          </button>
+          <p className="account-note">
+            Production payment should use Stripe Checkout and a server webhook before setting paid access.
+          </p>
+        </section>
+
+        <section className="account-card reward-account-card">
+          <p className="eyebrow">Weekly Reward</p>
+          <h2>{selectedReward.title}</h2>
+          <div className="reward-choice-grid compact">
+            {rewardOptions.map((option) => (
+              <button
+                className={option.id === progress.selectedReward ? "active" : ""}
+                key={option.id}
+                onClick={() => updateProgress({ ...progress, selectedReward: option.id })}
+                type="button"
+              >
+                <strong>{option.shortTitle}</strong>
+              </button>
+            ))}
+          </div>
+        </section>
+      </div>
+    </section>
+  );
+}
+
 function ParentView({
   progress,
   updateProgress,
@@ -2041,17 +2282,18 @@ function ParentView({
   updateProgress: (progress: ProgressState) => void;
 }) {
   const [coins, setCoins] = useState("700");
-  const [reward, setReward] = useState("AU$5 Roblox gift card or equivalent cash reward");
   const totalAttempts = progress.attempts.length;
   const correctAttempts = progress.attempts.filter((attempt) => attempt.correct).length;
   const accuracy = totalAttempts ? Math.round((correctAttempts / totalAttempts) * 100) : 0;
 
   function addRule() {
     const parsedCoins = Number(coins);
-    if (!parsedCoins || !reward.trim()) return;
+    if (!parsedCoins) return;
     updateProgress({
       ...progress,
-      rewardRules: [...progress.rewardRules, { coins: parsedCoins, reward: reward.trim() }].sort((a, b) => a.coins - b.coins),
+      rewardRules: [...progress.rewardRules, { coins: parsedCoins, reward: "Weekly parent-approved reward" }].sort(
+        (a, b) => a.coins - b.coins,
+      ),
     });
   }
 
@@ -2074,10 +2316,18 @@ function ParentView({
             Points required
             <input value={coins} onChange={(event) => setCoins(event.target.value)} inputMode="numeric" />
           </label>
-          <label>
-            Reward name
-            <input value={reward} onChange={(event) => setReward(event.target.value)} />
-          </label>
+          <div className="reward-choice-grid compact">
+            {rewardOptions.map((option) => (
+              <button
+                className={option.id === progress.selectedReward ? "active" : ""}
+                key={option.id}
+                onClick={() => updateProgress({ ...progress, selectedReward: option.id })}
+                type="button"
+              >
+                <strong>{option.shortTitle}</strong>
+              </button>
+            ))}
+          </div>
           <button className="primary-action" onClick={addRule}>
             Save reward
           </button>
