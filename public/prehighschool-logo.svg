@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="300" viewBox="0 0 640 300" role="img" aria-label="PreHighSchool Academy">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#08233f"/>
+      <stop offset="0.55" stop-color="#123e59"/>
+      <stop offset="1" stop-color="#1f6f78"/>
+    </linearGradient>
+    <linearGradient id="mark" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#dcefed"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="300" rx="26" fill="url(#bg)"/>
+  <path d="M82 74h106c25.4 0 46 20.6 46 46v104H128c-25.4 0-46-20.6-46-46V74Z" fill="url(#mark)"/>
+  <path d="M124 123h68M124 154h86M124 185h62" stroke="#1f6f78" stroke-width="15" stroke-linecap="round"/>
+  <path d="M230 62l18 33 33 18-33 18-18 33-18-33-33-18 33-18 18-33Z" fill="#f2b84b"/>
+  <text x="302" y="130" fill="#ffffff" font-family="Arial, Helvetica, sans-serif" font-size="42" font-weight="800" letter-spacing=".5">
+    PreHighSchool
+  </text>
+  <text x="304" y="178" fill="#dcefed" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700" letter-spacing="5">
+    ACADEMY
+  </text>
+  <text x="306" y="216" fill="#f2b84b" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700">
+    Year 4-6 Selective & Scholarship Readiness
+  </text>
+</svg>

@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192" role="img" aria-label="PreHighSchool Academy">
+  <defs>
+    <linearGradient id="bg" x1="22" x2="170" y1="18" y2="174">
+      <stop offset="0" stop-color="#1f6f78"/>
+      <stop offset="1" stop-color="#2f9d7e"/>
+    </linearGradient>
+    <linearGradient id="building" x1="66" x2="126" y1="72" y2="130">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#e7f2ef"/>
+    </linearGradient>
+  </defs>
+  <rect width="192" height="192" rx="42" fill="url(#bg)"/>
+  <circle cx="151" cy="38" r="34" fill="#f2b84b" opacity=".16"/>
+  <path d="M42 141h108" fill="none" stroke="#ffffff" stroke-width="7" stroke-linecap="round" opacity=".9"/>
+  <path d="M58 128h76v16H58z" fill="#ffffff" opacity=".92"/>
+  <path d="M66 76h60v52H66z" fill="url(#building)"/>
+  <path d="M53 76h86L96 48z" fill="#f2b84b"/>
+  <path d="M62 76h68" fill="none" stroke="#ffffff" stroke-width="7" stroke-linecap="round"/>
+  <path d="M78 92v36M96 92v36M114 92v36" fill="none" stroke="#1f6f78" stroke-width="8" stroke-linecap="round"/>
+  <path d="M92 109h18v19H92z" fill="#1f6f78"/>
+  <path d="M70 152c15-6 30-6 45 0M115 152c15-6 30-6 45 0" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round" opacity=".92"/>
+  <path d="M94 151h24" fill="none" stroke="#f2b84b" stroke-width="6" stroke-linecap="round"/>
+</svg>

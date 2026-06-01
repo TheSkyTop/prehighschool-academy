@@ -1,0 +1,30 @@
+{
+  "name": "prehighschool-academy",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc && vite build",
+    "content:audit": "node scripts/audit-commercial-content.mjs",
+    "pilot:audit": "node scripts/audit-two-week-pilot.mjs",
+    "commercial:audit": "node scripts/audit-commercial-content.mjs",
+    "progression:audit": "node scripts/audit-week-progression.mjs",
+    "mobile:audit": "node scripts/audit-mobile-readiness.mjs",
+    "content:check": "node scripts/audit-commercial-content.mjs",
+    "knowledge:audit": "node scripts/audit-knowledge-tree.mjs",
+    "release:check": "npm run content:check && npm run content:audit && npm run knowledge:audit && npm run pilot:audit && npm run commercial:audit && npm run progression:audit && npm run mobile:audit && npm run build",
+    "preview": "vite preview --host 127.0.0.1"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "^5.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "typescript": "^5.8.0",
+    "vite": "^7.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.15",
+    "@types/react-dom": "^19.2.3"
+  }
+}
