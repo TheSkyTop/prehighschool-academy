@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite --host 127.0.0.1",
+    "dev": "vite --host 0.0.0.0",
     "build": "tsc && vite build",
     "content:audit": "node scripts/audit-commercial-content.mjs",
     "pilot:audit": "node scripts/audit-two-week-pilot.mjs",
@@ -15,7 +15,7 @@
     "content:check": "node scripts/audit-commercial-content.mjs",
     "knowledge:audit": "node scripts/audit-knowledge-tree.mjs",
     "release:check": "npm run content:check && npm run content:audit && npm run knowledge:audit && npm run pilot:audit && npm run commercial:audit && npm run commercial-flow:audit && npm run progression:audit && npm run mobile:audit && npm run build",
-    "preview": "vite preview --host 127.0.0.1"
+    "preview": "vite preview --host 0.0.0.0"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^5.0.0",
