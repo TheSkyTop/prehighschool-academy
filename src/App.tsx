@@ -1509,6 +1509,8 @@ function InlineQuizPanel({
   onReset: () => void;
   onSubmit: () => void;
 }) {
+  const [activeQuizPage, setActiveQuizPage] = useState(0);
+  const quizPagerRef = useRef<HTMLDivElement | null>(null);
   const isWritingQuiz = questions.length === 1 && questions[0]?.type === "writing";
   const passageSets = activeQuest.subject === "reading" ? readingQuizPassages[activeQuest.id] : undefined;
   const questionsById = new Map(questions.map((question) => [question.id, question]));
@@ -1516,6 +1518,32 @@ function InlineQuizPanel({
   const displayedCorrect = isWritingQuiz && submitted && correctCount > 0 ? DAILY_QUIZ_TARGET : correctCount;
   const accuracy = getAccuracyPercent(correctCount, questions.length);
   const quizPageCount = passageSets ? passageSets.length : questions.length;
+  const answeredCount = questions.filter((question) => (answers[question.id] ?? "").trim().length > 0).length;
+  const remainingCount = Math.max(0, questions.length - answeredCount);
+  const isLastQuizPage = activeQuizPage >= quizPageCount - 1;
+
+  useEffect(() => {
+    setActiveQuizPage(0);
+    quizPagerRef.current?.scrollTo({ left: 0, behavior: "auto" });
+  }, [activeQuest.id, submitted]);
+
+  function moveQuizPage(direction: -1 | 1) {
+    const nextPage = Math.min(quizPageCount - 1, Math.max(0, activeQuizPage + direction));
+    setActiveQuizPage(nextPage);
+    const container = quizPagerRef.current;
+    if (container) {
+      const pageWidth = container.clientWidth;
+      container.scrollTo({ left: nextPage * pageWidth, behavior: "smooth" });
+    }
+  }
+
+  function handleQuizScroll() {
+    const container = quizPagerRef.current;
+    if (!container) return;
+    const pageWidth = Math.max(1, container.clientWidth);
+    setActiveQuizPage(Math.min(quizPageCount - 1, Math.max(0, Math.round(container.scrollLeft / pageWidth))));
+  }
+
   return (
     <div className="inline-quiz">
       <div className="inline-quiz-header">
@@ -1524,12 +1552,19 @@ function InlineQuizPanel({
             ? `Accuracy ${accuracy}% - ${displayedCorrect}/${quizCreditTotal} quiz credits`
             : isWritingQuiz
               ? "One writing task - worth 10 quiz credits"
-              : "Answer all questions"}
+              : remainingCount === 0
+                ? "Ready to submit"
+                : `${remainingCount} question${remainingCount === 1 ? "" : "s"} left`}
         </span>
       </div>
-      <PageHint count={Math.max(1, quizPageCount)} />
+      <PageHint activeIndex={activeQuizPage} count={Math.max(1, quizPageCount)} />
       {passageSets ? (
-        <div className="reading-passage-stack swipe-pages quiz-pages" aria-label="Swipe reading quiz passages">
+        <div
+          className="reading-passage-stack swipe-pages quiz-pages"
+          aria-label="Swipe reading quiz passages"
+          onScroll={handleQuizScroll}
+          ref={quizPagerRef}
+        >
           {passageSets.map((passage, passageIndex) => (
             <section className="reading-passage-block swipe-page" key={passage.title}>
               <div className="reading-passage-copy">
@@ -1557,7 +1592,12 @@ function InlineQuizPanel({
           ))}
         </div>
       ) : (
-        <div className="inline-question-list swipe-pages quiz-pages" aria-label="Swipe quiz questions">
+        <div
+          className="inline-question-list swipe-pages quiz-pages"
+          aria-label="Swipe quiz questions"
+          onScroll={handleQuizScroll}
+          ref={quizPagerRef}
+        >
           {questions.map((question, index) => (
             <div className="swipe-page" key={question.id}>
               <InlineQuestionCard
@@ -1573,9 +1613,20 @@ function InlineQuizPanel({
       )}
       <div className="inline-quiz-actions">
         {!submitted ? (
-          <button className="primary-action" disabled={!allAnswered} onClick={onSubmit}>
-            Submit quiz
-          </button>
+          <>
+            <button className="secondary-action" disabled={activeQuizPage === 0} onClick={() => moveQuizPage(-1)}>
+              Previous
+            </button>
+            {!isLastQuizPage ? (
+              <button className="primary-action" onClick={() => moveQuizPage(1)}>
+                Next question
+              </button>
+            ) : (
+              <button className="primary-action" disabled={!allAnswered} onClick={onSubmit}>
+                {allAnswered ? "Submit quiz" : `${remainingCount} left`}
+              </button>
+            )}
+          </>
         ) : (
           <>
             <strong>

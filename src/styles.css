@@ -459,6 +459,15 @@ button:disabled {
   color: #1f535a;
 }
 
+.primary-action:disabled,
+.secondary-action:disabled {
+  cursor: not-allowed;
+  border-color: rgba(188, 204, 198, 0.5);
+  background: rgba(231, 238, 234, 0.72);
+  color: #7b8c91;
+  box-shadow: none;
+}
+
 .quest-panel,
 .panel,
 .question-panel,
@@ -1334,7 +1343,7 @@ button:disabled {
   background: rgba(31, 111, 120, 0.22);
 }
 
-.page-hint i:first-child {
+.page-hint i.active {
   width: 18px;
   background: #1f6f78;
 }
