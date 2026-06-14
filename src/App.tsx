@@ -18,6 +18,7 @@ const QUIZ_SECONDS = 20 * 60;
 const YEAR_WEEKS = 52;
 const LIFETIME_ACCESS_AUD = 30;
 const FREE_PREVIEW_WEEKS = 2;
+const WEEK_SELECTOR_WINDOW = 5;
 
 const rewardOptions: Array<{ id: RewardPreference; title: string; shortTitle: string; detail: string }> = [
   {
@@ -2602,17 +2603,17 @@ function getWeekQuests(week: number) {
 function getLearningWeekOptions(completedQuestIds: string[]) {
   const completed = new Set(completedQuestIds);
   const availableWeeks = Array.from(new Set(weeklyQuests.map((quest) => questWeek(quest.id)))).sort((a, b) => a - b);
-  if (availableWeeks.length <= 2) return availableWeeks;
+  if (availableWeeks.length <= WEEK_SELECTOR_WINDOW) return availableWeeks;
 
   const firstIncompleteIndex = availableWeeks.findIndex((week) => {
     const weekQuests = getWeekQuests(week);
     return weekQuests.some((quest) => !completed.has(quest.id));
   });
-  const finalWindowStart = Math.max(0, availableWeeks.length - 2);
+  const finalWindowStart = Math.max(0, availableWeeks.length - WEEK_SELECTOR_WINDOW);
   const startIndex =
     firstIncompleteIndex === -1 ? finalWindowStart : Math.min(firstIncompleteIndex, finalWindowStart);
 
-  return availableWeeks.slice(startIndex, startIndex + 2);
+  return availableWeeks.slice(startIndex, startIndex + WEEK_SELECTOR_WINDOW);
 }
 
 function buildDailyQuiz(quest: DailyQuest) {

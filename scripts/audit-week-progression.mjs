@@ -41,17 +41,18 @@ function getWeekQuests(week) {
 
 function getLearningWeekOptions(completedQuestIds) {
   const completed = new Set(completedQuestIds);
+  const windowSize = 5;
   const availableWeeks = Array.from(new Set(data.weeklyQuests.map((quest) => questWeek(quest.id)))).sort((a, b) => a - b);
-  if (availableWeeks.length <= 2) return availableWeeks;
+  if (availableWeeks.length <= windowSize) return availableWeeks;
 
   const firstIncompleteIndex = availableWeeks.findIndex((week) => {
     const weekQuests = getWeekQuests(week);
     return weekQuests.some((quest) => !completed.has(quest.id));
   });
-  const finalWindowStart = Math.max(0, availableWeeks.length - 2);
+  const finalWindowStart = Math.max(0, availableWeeks.length - windowSize);
   const startIndex = firstIncompleteIndex === -1 ? finalWindowStart : Math.min(firstIncompleteIndex, finalWindowStart);
 
-  return availableWeeks.slice(startIndex, startIndex + 2);
+  return availableWeeks.slice(startIndex, startIndex + windowSize);
 }
 
 const week1And2Done = data.weeklyQuests
@@ -81,11 +82,11 @@ const loaded = progress.loadProgress();
 globalThis.window = originalWindow;
 
 const issues = [];
-if (optionsAfterTwoWeeks.join(",") !== "3,4") {
-  issues.push(`Expected week options 3,4 after two completed weeks, got ${optionsAfterTwoWeeks.join(",")}.`);
+if (optionsAfterTwoWeeks.join(",") !== "3,4,5,6,7") {
+  issues.push(`Expected week options 3,4,5,6,7 after two completed weeks, got ${optionsAfterTwoWeeks.join(",")}.`);
 }
-if (optionsAfterAllDone.join(",") !== "51,52") {
-  issues.push(`Expected final options 51,52 after all weeks completed, got ${optionsAfterAllDone.join(",")}.`);
+if (optionsAfterAllDone.join(",") !== "48,49,50,51,52") {
+  issues.push(`Expected final options 48,49,50,51,52 after all weeks completed, got ${optionsAfterAllDone.join(",")}.`);
 }
 if (loaded.completedQuestIds.length !== week1And2Done.length) {
   issues.push("Completed quest ids should persist across a new calendar week.");
